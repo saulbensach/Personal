@@ -5,7 +5,7 @@ defmodule Personal.Parser do
     "content/index.md"
     |> File.read!()
     |> markdown_to_ast()
-    #|> IO.inspect()
+    |> IO.inspect()
     |> ast_to_html()
     |> then(&File.write("static/index.html", &1))
 
@@ -17,6 +17,7 @@ defmodule Personal.Parser do
     |> String.replace("\r", "")
     |> String.split("\n", trim: true)
     |> Enum.map(&parse_line/1)
+    |> group_code_blocks()
     |> group_lists()
   end
 
@@ -26,13 +27,45 @@ defmodule Personal.Parser do
     |> IO.iodata_to_binary()
   end
 
+  def functions() do
+    [
+      &code_block/1,
+      &ordered_list/1,
+      &unordered_list/1,
+      &quoted/1,
+      &horizontal_ruler/1,
+      &header_token/1,
+      &paragraph/1
+    ]
+  end
+
   defp parse_line(line) do
     Enum.reduce_while(functions(), nil, fn fun, _acc ->
       fun.(String.trim(line))
     end)
   end
 
+  defp group_code_blocks(ast) do
+    Enum.reduce(ast, {false, [], []}, fn
+      {:code, _}, {false, _acc, final_acc} ->
+        {true, [], final_acc}
+
+      {:code, _}, {true, acc, final_acc} ->
+        {false, [], [{:code, Enum.reverse(acc)} | final_acc]}
+
+      {_, line}, {true, acc, final_acc} ->
+        {true, [line | acc], final_acc}
+
+      line, {any, acc, final_acc} ->
+        {any, acc, [line | final_acc]}
+    end)
+    |> elem(2)
+    |> Enum.reverse()
+  end
+
   # weird af
+  # finds blocks of li and groups them
+  # finally for each block create the ul
   defp group_lists(ast) do
     indexes =
       ast
@@ -55,6 +88,7 @@ defmodule Personal.Parser do
       |> then(fn {_, set, rest} ->
         [MapSet.to_list(set) | rest]
       end)
+      |> Enum.reject(& &1 == [])
 
     Enum.reduce(indexes, ast, fn indexes, acc ->
       items = Enum.map(indexes, &Enum.at(acc, &1))
@@ -80,24 +114,16 @@ defmodule Personal.Parser do
     end)
   end
 
-  def functions() do
-    [
-      &ordered_list/1,
-      &unordered_list/1,
-      &quoted/1,
-      &horizontal_ruler/1,
-      &header_token/1,
-      &paragraph/1
-    ]
-  end
+  defp code_block("```"), do: halt({:code, ""})
+  defp code_block(contents), do: continue(contents)
 
-  defp unordered_list("- " <> contents), do: halt({:li_un, contents})
+  defp unordered_list("- " <> contents), do: halt({:li_un, "- " <> contents})
   defp unordered_list(contents), do: continue(contents)
 
   # matches for N. and replaces from watever until point
   defp ordered_list(contents) do
     if Regex.match?(~r/^\d+\.\s.+/, contents) do
-      halt({:li_or, String.replace(contents, ~r/^\d+\.\s/, "")})
+      halt({:li_or, contents})
     else
       continue(contents)
     end
@@ -110,7 +136,6 @@ defmodule Personal.Parser do
 
   defp quoted("> " <> contents), do: halt({:quoted, parse_line(contents)})
   defp quoted(contents), do: continue(contents)
-
 
   defp header_token("# " <> contents), do: halt({:h1, contents})
   defp header_token("## " <> contents), do: halt({:h2, contents})
@@ -139,8 +164,28 @@ defmodule Personal.Parser do
   def write_block({:p, content}), do: ["<p>", content, "</p>"]
   def write_block({:ul, content}), do: ["<ul>", iterate(content), "</ul>"]
   def write_block({:ol, content}), do: ["<ol>", iterate(content), "</ol>"]
-  def write_block({:li, content}), do: ["<li>", content, "</li>"]
+  def write_block({:li, content}), do: ["<li>", clean_li(content), "</li>"]
+  def write_block({:br, content}), do: [content, "<br>"]
+  def write_block({:code, content}), do: ["<code>", iterate(add_jumps(clean_ast(content))), "</code>"]
   def write_block({:quoted, content}), do: ["<blockquote>", write_block(content), "</blockquote>"]
   def write_block({:hr, _content}), do: ["<hr />"]
   def write_block(_), do: []
+
+  def clean_li("- " <> content), do: content
+  def clean_li(content), do: String.replace(content, ~r/^\d+\.\s/, "")
+
+  # recursively remove all ast and just keep the content
+  def clean_ast(ast) do
+    Enum.map(ast, fn
+      {_, item} when is_list(item) ->
+        clean_ast(ast)
+
+      item ->
+        item
+    end)
+  end
+
+  def add_jumps(ast) do
+    Enum.map(ast, &{:br, &1})
+  end
 end

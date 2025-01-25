@@ -26,3 +26,10 @@ Now ordered time!
 1. one
 2. two
 3. three
+And a code block why not
+```
+this is a code block good luck :)
+with even lines damn
+- and a list inside 
+- should not be a list xd
+```
