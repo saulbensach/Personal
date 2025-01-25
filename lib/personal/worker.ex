@@ -43,6 +43,6 @@ defmodule Personal.Worker do
   end
 
   def handle_request(_) do
-    {"404 Not Found", ""}
+    {"405 Method Not Allowed", ""}
   end
 end

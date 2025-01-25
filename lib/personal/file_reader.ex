@@ -14,9 +14,7 @@ defmodule Personal.FileReader do
   end
 
   def get_file(path) do
-    access_path = ["static" | String.split(path, "/", trim: true)]
-
-    IO.inspect(access_path)
+    access_path = [@static_folder | String.split(path, "/", trim: true)]
 
     get_in(:persistent_term.get(:folders), access_path)
   end
