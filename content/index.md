@@ -1,14 +1,28 @@
-# Hola que tal
-Esto es una demo por que no tengo ni puta idea
-Esto es una demo por que no tengo ni puta idea
+# Lorem ipsum
+Lorem ipsum dolor sit amet, consectetur adipiscing elit
+Lorem ipsum dolor sit amet, consectetur adipiscing elit
 
-# Ahora nos tocamos las bolas
+# Lorem ipsum
 
-Que tal la tocada de bolas?
-yoo wasupp menudamierda!!!
+Lorem ipsum dolor sit amet, consectetur adipiscing elit
+Lorem ipsum dolor sit amet, consectetur adipiscing elit
+---
 
 ## H2
 ### H3
 #### H4
 ##### H5
 ###### H6
+
+> code or something
+> ### Lorem ipsum dolor :)
+
+Hello this is some list
+- item
+- another one
+- and next one
+
+Now ordered time!
+1. one
+2. two
+3. three
