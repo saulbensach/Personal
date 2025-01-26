@@ -1,15 +1,12 @@
 defmodule Personal.Parser do
   @moduledoc false
 
-  def parse() do
-    "content/index.md"
+  def parse(file) do
+    file
     |> File.read!()
     |> markdown_to_ast()
     |> IO.inspect()
     |> ast_to_html()
-    |> then(&File.write("static/index.html", &1))
-
-    Personal.FileReader.read()
   end
 
   def markdown_to_ast(binary) do

@@ -13,7 +13,6 @@ defmodule Personal.Acceptor do
       Supervisor.child_spec({Task, fn -> accept(port) end}, restart: :permanent)
     ]
 
-
     opts = [strategy: :one_for_one, name: __MODULE__]
     Supervisor.init(children, opts)
   end
