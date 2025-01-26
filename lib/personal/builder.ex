@@ -9,6 +9,10 @@ defmodule Personal.Builder do
 
     html = Personal.Parser.parse("content/index.md")
 
+    if not File.exists?("static") do
+      File.mkdir("static")
+    end
+
     File.read!("static/index.html")
     |> IO.inspect()
     |> String.replace("{{body}}", html)
