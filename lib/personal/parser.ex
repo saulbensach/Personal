@@ -218,9 +218,9 @@ defmodule Personal.Parser do
   def write_block({:img, {link, title, alt}}), do: ["<img src=\"#{link}\" title=\"#{title}\" alt=\"#{alt}\" />"]
   def write_block({:a, {link, text}}), do: ["<a href=\"#{link}\">", text, "</a>"]
   def write_block({:br, content}), do: [content, "<br>"]
-  def write_block({:code, content}), do: ["<code>", iterate(add_jumps(clean_ast(content))), "</code>"]
   def write_block({:quoted, content}), do: ["<blockquote>", write_block(content), "</blockquote>"]
   def write_block({:hr, _content}), do: ["<hr />"]
+  def write_block({:code, content}), do: ["<pre class=\"code\">", iterate(add_jumps(clean_ast(content))), "</pre>"]
   def write_block([]), do: []
   def write_block(content), do: content
 
