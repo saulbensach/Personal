@@ -1,21 +1,17 @@
 # Personal
 
-**TODO: Add description**
+Static page generator from Markdown to html with 0 dependencies.
 
-## Installation
+This is a personal project and it not intended to support every edge case, I patch as I need them.
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `personal` to your list of dependencies in `mix.exs`:
+## Structure
 
-```elixir
-def deps do
-  [
-    {:personal, "~> 0.1.0"}
-  ]
-end
-```
+### Content
+Where the markdown goes
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/personal>.
+### Template
+The html and css and watever needs to be included
+
+### Static
+The output of the builder
 
