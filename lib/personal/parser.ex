@@ -35,6 +35,7 @@ defmodule Personal.Parser do
       &quoted/1,
       &horizontal_ruler/1,
       &header_token/1,
+      &image_block/1,
       &paragraph/1
     ]
   end
@@ -56,8 +57,8 @@ defmodule Personal.Parser do
       {_, line}, {true, acc, final_acc} ->
         {true, [line | acc], final_acc}
 
-      line, {any, acc, final_acc} ->
-        {any, acc, [line | final_acc]}
+      line, {false, acc, final_acc} ->
+        {false, acc, [line | final_acc]}
     end)
     |> elem(2)
     |> Enum.reverse()
@@ -114,6 +115,20 @@ defmodule Personal.Parser do
     end)
   end
 
+  defp image_block("!" <> contents) do
+    ["["<> alt, rest] = String.split(contents, "](")
+    right_part = String.trim_trailing(rest, ")")
+    IO.inspect(right_part)
+    [link, title] = String.split(right_part, " ", trim: true, parts: 2)
+
+    IO.inspect({link, title})
+
+    halt({:img, {link, title, alt}})
+  end
+
+  defp image_block(contents), do: continue(contents)
+
+
   defp code_block("```"), do: halt({:code, ""})
   defp code_block(contents), do: continue(contents)
 
@@ -165,6 +180,7 @@ defmodule Personal.Parser do
   def write_block({:ul, content}), do: ["<ul>", iterate(content), "</ul>"]
   def write_block({:ol, content}), do: ["<ol>", iterate(content), "</ol>"]
   def write_block({:li, content}), do: ["<li>", clean_li(content), "</li>"]
+  def write_block({:img, {link, title, alt}}), do: ["<img src=\"#{link}\" title=#{title} alt=\"#{alt}\" />"]
   def write_block({:br, content}), do: [content, "<br>"]
   def write_block({:code, content}), do: ["<code>", iterate(add_jumps(clean_ast(content))), "</code>"]
   def write_block({:quoted, content}), do: ["<blockquote>", write_block(content), "</blockquote>"]
