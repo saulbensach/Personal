@@ -42,7 +42,11 @@ defmodule Personal.Parser do
 
   defp parse_line(line) do
     Enum.reduce_while(functions(), nil, fn fun, _acc ->
-      fun.(String.trim(line))
+      try do
+        fun.(String.trim(line))
+      rescue
+        _ -> paragraph(String.trim(line))
+      end
     end)
   end
 
@@ -115,19 +119,44 @@ defmodule Personal.Parser do
     end)
   end
 
+  # if a line starts with ! is an img
   defp image_block("!" <> contents) do
     ["["<> alt, rest] = String.split(contents, "](")
     right_part = String.trim_trailing(rest, ")")
-    IO.inspect(right_part)
     [link, title] = String.split(right_part, " ", trim: true, parts: 2)
 
-    IO.inspect({link, title})
-
-    halt({:img, {link, title, alt}})
+    halt({:img, {link, String.replace(title, "\"", ""), alt}})
   end
+
 
   defp image_block(contents), do: continue(contents)
 
+  # now do when an image is in the middle of something
+  # dirty af
+  defp image_block_in_line({type, contents}) do
+    if String.contains?(contents, "![") do
+      # fetch when it starts the block and slice it
+      starting_index = find_index_for_pattern(contents, "![")
+      last_index = find_index_for_pattern(contents, ")")
+      maybe_image = String.slice(contents, (starting_index+1)..last_index)
+
+      # same logic as for base case
+      ["["<> alt, rest] = String.split(maybe_image, "](")
+      right_part = String.trim_trailing(rest, ")")
+      [link, title] = String.split(right_part, " ", trim: true, parts: 2)
+
+      # replace the image thing from the OG image
+      first = String.slice(contents, 0..(starting_index-1))
+      last = String.slice(contents, last_index..-2//1)
+
+      image = {:img, {link, String.replace(title, "\"", ""), alt}}
+      halt({type, [first, image, last]})
+    else
+      continue(contents)
+    end
+  rescue
+    _ -> continue(contents)
+  end
 
   defp code_block("```"), do: halt({:code, ""})
   defp code_block(contents), do: continue(contents)
@@ -160,7 +189,15 @@ defmodule Personal.Parser do
   defp header_token("###### " <> contents), do: halt({:h6, contents})
   defp header_token(contents), do: continue(contents)
 
-  defp paragraph(contents), do: halt({:p, contents})
+  defp paragraph(contents) do
+    case image_block_in_line({:p, contents}) do
+      {:halt, inline_image} ->
+        IO.inspect(inline_image, label: "INLINE!")
+        halt(inline_image)
+      {:cont, _} ->
+        halt({:p, contents})
+    end
+  end
 
   defp halt(leaf), do: {:halt, leaf}
   defp continue(leaf), do: {:cont, leaf}
@@ -176,16 +213,19 @@ defmodule Personal.Parser do
   def write_block({:h4, content}), do: ["<h4>", content, "</h4>"]
   def write_block({:h5, content}), do: ["<h5>", content, "</h5>"]
   def write_block({:h6, content}), do: ["<h6>", content, "</h6>"]
+  def write_block({:p, content}) when is_list(content), do:  ["<p>", iterate(content), "</p>"]
   def write_block({:p, content}), do: ["<p>", content, "</p>"]
   def write_block({:ul, content}), do: ["<ul>", iterate(content), "</ul>"]
   def write_block({:ol, content}), do: ["<ol>", iterate(content), "</ol>"]
   def write_block({:li, content}), do: ["<li>", clean_li(content), "</li>"]
-  def write_block({:img, {link, title, alt}}), do: ["<img src=\"#{link}\" title=#{title} alt=\"#{alt}\" />"]
+  def write_block({:img, {link, title, alt}}), do: ["<img src=\"#{link}\" title=\"#{title}\" alt=\"#{alt}\" />"]
+  def write_block({:a, {link, text}}), do: ["<a href=\"#{link}\">", text, "</a>"]
   def write_block({:br, content}), do: [content, "<br>"]
   def write_block({:code, content}), do: ["<code>", iterate(add_jumps(clean_ast(content))), "</code>"]
   def write_block({:quoted, content}), do: ["<blockquote>", write_block(content), "</blockquote>"]
   def write_block({:hr, _content}), do: ["<hr />"]
-  def write_block(_), do: []
+  def write_block([]), do: []
+  def write_block(content), do: content
 
   def clean_li("- " <> content), do: content
   def clean_li(content), do: String.replace(content, ~r/^\d+\.\s/, "")
@@ -203,5 +243,16 @@ defmodule Personal.Parser do
 
   def add_jumps(ast) do
     Enum.map(ast, &{:br, &1})
+  end
+
+  defp find_index_for_pattern(line, pattern) do
+    line
+    |> String.split("", trim: true)
+    |> Enum.chunk_every(2)
+    |> Enum.map(&Enum.join(&1, ""))
+    |> Enum.with_index()
+    |> Enum.find(fn {key, _index} -> key == pattern end)
+    |> elem(1)
+    |> Kernel.*(2)
   end
 end

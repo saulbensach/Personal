@@ -2,6 +2,12 @@
 Lorem ipsum dolor sit amet, consectetur adipiscing elit
 Lorem ipsum dolor sit amet, consectetur adipiscing elit
 
+***
+Inline-style: 
+![alt text](images/sample.webp "Logo Title Text 1")
+
+Now in the middle ![alt text](images/sample.webp "Logo Title Text 1")
+
 # Lorem ipsum
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit
@@ -33,8 +39,8 @@ with even lines damn
 - and a list inside 
 - should not be a list xd
 ```
+___
 
-Here's our logo (hover to see the title text):
-
-Inline-style: 
-![alt text](https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png "Logo Title Text 1")
+***
+___
+---
